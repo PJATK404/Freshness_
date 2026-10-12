@@ -1,0 +1,72 @@
+name: PR rules
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          pattern='^(feat|fix|docs|refactor|test|chore|ci|ml)/[a-z0-9]+(-[a-z0-9]+)*$'
+          if [[ ! "$BRANCH_NAME" =~ $pattern ]]; then
+            echo "::error::Nazwa brancha '$BRANCH_NAME' nie pasuje do wzorca <typ>/<opis-kebab-case>, np. feat/12-scan-screen. Dozwolone typy: feat, fix, docs, refactor, test, chore, ci, ml."
+            exit 1
+          fi
+
+  pr-title:
+    name: PR title (Conventional Commits)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            refactor
+            test
+            chore
+            ci
+            ml
+          scopes: |
+            app
+            ml
+            data
+            repo
+          requireScope: false
+
+  file-size:
+    name: No large files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check added file sizes (limit 10 MB)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          limit=$((10 * 1024 * 1024))
+          too_big=0
+          while IFS= read -r -d '' file; do
+            size=$(stat -c%s "$file")
+            if [ "$size" -gt "$limit" ]; then
+              echo "::error file=$file::Plik ma $((size / 1024 / 1024)) MB (limit 10 MB). Datasety i checkpointy trzymamy poza repo."
+              too_big=1
+            fi
+          done < <(git diff -z --name-only --diff-filter=AM "origin/$BASE_REF...HEAD")
+          exit $too_big

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "freshness-ml"
+version = "0.1.0"
+description = "Trening modelu (MobileNetV3, 2 głowice), eksport do TFLite i budowa bazy wartości odżywczych z USDA."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "ruff==0.17.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # sortowanie importów
+  "N",   # pep8-naming (snake_case, PascalCase, UPPER_CASE)
+  "UP",  # nowoczesna składnia Pythona 3.12
+  "B",   # typowe błędy (bugbear)
+  "SIM", # uproszczenia
+  "C4",  # comprehensions
+  "RUF", # reguły ruffa
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
